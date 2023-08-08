@@ -18,9 +18,9 @@
 int main() {
 
     transformer_l.ifmap = (float*)transformer_ifmap_dram;
-    transformer_l.Wq = (float*)transformer_weights_q_dram;
-    transformer_l.Wk = (float*)transformer_weights_k_dram;
-    transformer_l.Wv = (float*)transformer_weights_v_dram;
+    transformer_l.weights_q = (float*)transformer_weights_q_dram;
+    transformer_l.weights_k = (float*)transformer_weights_k_dram;
+    transformer_l.weights_v = (float*)transformer_weights_v_dram;
 
     transformer_layer(&transformer_l);
 
