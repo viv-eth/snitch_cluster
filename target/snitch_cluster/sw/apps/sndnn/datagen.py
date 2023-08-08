@@ -506,7 +506,7 @@ def emit_transformer_layer(name='transformer', **kwargs):
 
     layer_str = '#include <stdint.h>\n'
     layer_str += '#include "layer.h"\n\n'
-    layer_str += f'transformer_layer {name}_l = {{\n'
+    layer_str += f'transformer_layer_t {name}_l = {{\n'
     layer_str += f'\t.seq_len = {S},\n'
     layer_str += f'\t.embeddings = {E},\n'
     layer_str += f'\t.positional_embeddings = {P},\n'
