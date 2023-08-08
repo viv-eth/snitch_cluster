@@ -262,3 +262,54 @@ typedef struct layernorm_layer_struct {
 
     precision_t dtype;
 } layernorm_layer_t;
+
+/**
+ * @struct Transformer_layer_struct
+ * @brief This structure contains all parameters necessary
+ *        for computing a Transformer layer
+ * @var transformer_layer_struct::seq_len
+ * Number of input tokens
+ * @var transformer_layer_struct::embeddings
+ * Vector size of each input token
+ * @var transformer_layer_struct::positional_embeddings
+ * Vector size of each positional embedding
+ * @var transformer_layer_struct::ifmap
+ * Pointer to input feature map
+ * @var transformer_layer_struct::bias
+ * Pointer to bias for each head
+ * @var transformer_layer_struct::weights_q
+ * Pointer to weights for query
+ * @var transformer_layer_struct::weights_k
+ * Pointer to weights for key
+ * @var transformer_layer_struct::weights_v
+ * Pointer to weights for value
+ * @var transformer_layer_struct::ofmap
+ * Pointer to output feature map
+ * @var transformer_layer_struct::query
+ * Pointer to the golden model output for query
+ * @var transformer_layer_struct::key
+ * Pointer to the golden model output for key
+ * @var transformer_layer_struct::value
+ * Pointer to the golden model output for value
+ */
+
+typedef struct transformer_layer_struct {
+    uint32_t BATCH_SIZE;
+    uint32_t seq_len;
+    uint32_t embeddings;
+    uint32_t positional_embeddings;
+    uint32_t heads;
+    uint32_t eps;
+
+    float *ifmap;
+    float *bias;
+    float *weights_q;
+    float *weights_k;
+    float *weights_v;
+    float *ofmap;
+    float *query;
+    float *key;
+    float *value;
+
+    precision_t dtype;
+} transformer_layer_t;

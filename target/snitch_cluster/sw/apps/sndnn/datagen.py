@@ -73,6 +73,9 @@ def emit_header_file(layer_type: str, **kwargs):
     elif layer_type == 'LayerNorm':
         file = file_path / 'data_layernorm.h'
         emit_str += emit_layernorm_layer(**kwargs)
+    elif layer_type == 'Transformer':
+        file = file_path / 'data_transformer.h'
+        emit_str += emit_transformer_layer(**kwargs)
 
     with file.open('w') as f:
         f.write(emit_str)
@@ -478,6 +481,48 @@ def emit_fusedconv(name='fusedconv', **kwargs):
 
     return layer_str
 
+def emit_transformer_layer(name='transformer', **kwargs):
+
+    ifmap = kwargs['ifmap']
+    weights_q = kwargs['weights_q']
+    weights_k = kwargs['weights_k']
+    weights_v = kwargs['weights_v']
+
+    query = kwargs['query']
+    key = kwargs['key']
+    value = kwargs['value']
+
+    S, E = ifmap.shape
+    _, P = weights_q.shape
+
+    ctypes = {
+        '64': 'double',
+        '32': 'float',
+        '16': '__fp16',
+        '8': 'char'
+    }
+
+    dtype = ctypes[str(kwargs['prec'])]
+
+    layer_str = '#include <stdint.h>\n'
+    layer_str += '#include "layer.h"\n\n'
+    layer_str += f'transformer_layer {name}_l = {{\n'
+    layer_str += f'\t.seq_len = {S},\n'
+    layer_str += f'\t.embeddings = {E},\n'
+    layer_str += f'\t.positional_embeddings = {P},\n'
+    layer_str += f'\t.dtype = FP{kwargs["prec"]},\n'
+    layer_str += '};\n\n\n'
+
+    layer_str += f'static {dtype} {name}_ifmap_dram[{S}][{E}] = ' + array_to_cstr(ifmap) + ';\n\n'
+    layer_str += f'static {dtype} {name}_weights_q_dram[{E}][{P}] = ' + array_to_cstr(weights_q) + ';\n\n'
+    layer_str += f'static {dtype} {name}_weights_k_dram[{E}][{P}] = ' + array_to_cstr(weights_k) + ';\n\n'
+    layer_str += f'static {dtype} {name}_weights_v_dram[{E}][{P}] = ' + array_to_cstr(weights_v) + ';\n\n'
+    layer_str += f'static {dtype} {name}_query_dram[{S}][{P}] = ' + array_to_cstr(query) + ';\n\n'
+    layer_str += f'static {dtype} {name}_key_dram[{S}][{P}] = ' + array_to_cstr(key) + ';\n\n'
+    layer_str += f'static {dtype} {name}_value_dram[{S}][{P}] = ' + array_to_cstr(value) + ';\n\n'
+
+    return layer_str
+
 
 def rand_data_generator(shape, prec, alt=False):
     if prec == 64:
@@ -633,6 +678,16 @@ def softmax(ifmap, axis):
 def layernorm(ifmap, eps, shape):
     ln = torch.nn.LayerNorm(shape, eps=eps)
     ofmap = ln(ifmap)
+
+    return ofmap
+
+def transformer(ifmap, weights, bias, eps, shape, use_bias):
+    # ln = torch.nn.LayerNorm(shape, eps=eps)
+    # ofmap = ln(ifmap)
+    if use_bias:
+        ofmap = torch.matmul(ifmap, weights.T) + bias
+    else:
+        ofmap = torch.matmul(ifmap, weights.T)
 
     return ofmap
 
@@ -865,6 +920,34 @@ def main():
         }
 
         emit_header_file('LayerNorm', **kwargs)
+
+    elif param['kernel'] == 'Transformer':
+        ifmap = torch.randn(param['input_dim']['seq_len'], param['input_dim']['embeddings'],
+                            requires_grad=False, dtype=dtype)
+
+        weights_q = torch.randn(param['input_dim']['embeddings'], param['input_dim']['positional_embeddings'],
+                                requires_grad=False, dtype=dtype)
+        weights_k = torch.randn(param['input_dim']['embeddings'], param['input_dim']['positional_embeddings'],
+                                requires_grad=False, dtype=dtype)
+        weights_v = torch.randn(param['input_dim']['embeddings'], param['input_dim']['positional_embeddings'],
+                                requires_grad=False, dtype=dtype)
+
+        query = transformer(ifmap, weights_q.T, None, None, None, False)
+        key = transformer(ifmap, weights_k.T, None, None, None, False)
+        value = transformer(ifmap, weights_v.T, None, None, None, False)
+
+        kwargs = {
+            'ifmap': ifmap,
+            'weights_q': weights_q,
+            'weights_k': weights_k,
+            'weights_v': weights_v,
+            'query': query,
+            'key': key,
+            'value': value,
+            'prec': param['prec'],
+        }
+
+        emit_header_file('Transformer', **kwargs)        
 
     else:
         print("No valid kernel selected")
