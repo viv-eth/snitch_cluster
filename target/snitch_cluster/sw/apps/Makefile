@@ -16,7 +16,8 @@ SUBDIRS += sndnn/gemm
 SUBDIRS += sndnn/layernorm # throws illegal instruction in simulation
 SUBDIRS += sndnn/linear
 SUBDIRS += sndnn/maxpool
-# SUBDIRS += sndnn/softmax
+SUBDIRS += sndnn/softmax
+SUBDIRS += sndnn/transformer
 
 .PHONY: all clean $(SUBDIRS)
 
