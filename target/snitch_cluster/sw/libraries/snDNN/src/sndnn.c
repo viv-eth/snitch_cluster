@@ -17,4 +17,5 @@
 #include "snrt.h"
 #include "utils.c"
 // #include "nnlinear_backend_baseline.c"
-// #include "softmax_layer.c"
+#include "softmax_layer.c"
+#include "transformer_layer.c"

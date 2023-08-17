@@ -26,4 +26,5 @@
 #include "network.h"
 #include "utils.h"
 // #include "nnlinear_backend_baseline.h"
-// #include "softmax_layer.h"
+#include "softmax_layer.h"
+#include "transformer_layer.h"
