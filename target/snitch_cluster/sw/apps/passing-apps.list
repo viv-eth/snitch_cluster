@@ -5,3 +5,5 @@ sndnn/linear
 sndnn/maxpool
 sndnn/gelu
 sndnn/gemm
+sndnn/softmax
+sndnn/transformer
