@@ -85,6 +85,7 @@ jobs:
             sw/math/src/internal/*
             sw/math/src/math/*
             sw/math/Makefile
+            target/snitch_cluster/sw/apps/dnn/flashattention_2/tcasai/roi.json.tpl
 
   ##################
   # Lint YML Files #
