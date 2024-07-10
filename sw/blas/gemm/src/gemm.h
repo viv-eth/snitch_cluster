@@ -48,7 +48,7 @@ typedef void (*gemm_fp_t)(uint32_t m, uint32_t n, uint32_t k, void* a,
                           uint32_t transb, uint32_t ldb, void* c, uint32_t ldc,
                           uint32_t beta, uint32_t setup_ssr);
 
-typedef struct {
+typedef struct gemm_args_struct {
     double alpha;
     uint32_t prec;
     uint32_t setup_ssr;

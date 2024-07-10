@@ -20,7 +20,7 @@
  * @var fused_concat_linear_layer_t::output
  * Pointer to the concatenated output tensor
  */
-typedef struct {
+typedef struct fused_concat_linear_layer_struct {
     uint32_t num_inputs;
     uint32_t input_shape[2];
     uint32_t output_shape[2];

@@ -33,7 +33,7 @@
  * @var flashattention_2_layer_t::O
  * Pointer to output tensor
  */
-typedef struct {
+typedef struct flashattention_2_layer_struct {
     uint32_t L;
     uint32_t S;
     uint32_t d;

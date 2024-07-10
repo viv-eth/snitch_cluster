@@ -1,0 +1,52 @@
+// Copyright 2023 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+{
+    layernorm : {
+        input_dim: {
+            batch_size: 1,
+            seq_len: 16,
+            embeddings: 128
+        },
+        eps: 1e-5,
+        prec: "FP32",
+        n_tiles: 2,
+        implementation: "OPT"
+    },
+    gemm : {
+        setup_ssr: 1,
+        parallelize_m: 0,
+        parallelize_k: 0,
+        m_tiles: 2,
+        n_tiles: 1,
+        k_tiles: 1,
+        load_a: 1,
+        load_b: 1,
+        load_c: 0,
+        transa: false,
+        transb: true,
+        M: 16,
+        N: 64,
+        K: 128,
+        alpha: 1,
+        beta: 0,
+        gemm_fp: "gemm_fp32_opt"
+    },
+    flashattention_2 : {
+        L: 16,
+        S: 16,
+        d: 64,
+        B_r: 16,
+        B_c: 16,
+        dtype: "FP32",
+        baseline: false
+    },
+    'fused_concat_linear' : {
+        num_inputs: 1,
+        input_shape: [16, 64],
+        output_shape: [16, 128],
+        dtype: "FP32",
+        gemm_implementation: "gemm_fp32_naive_unrolled"
+    }
+}
