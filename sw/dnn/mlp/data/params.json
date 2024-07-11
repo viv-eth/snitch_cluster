@@ -1,0 +1,57 @@
+// Copyright 2023 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+{
+    layernorm : {
+        input_dim: {
+            batch_size: 1,
+            seq_len: 16,
+            embeddings: 128
+        },
+        eps: 1e-5,
+        prec: "FP32",
+        n_tiles: 2,
+        implementation: "OPT"
+    },
+    'fused_linear_gelu' : {
+        setup_ssr: 1,
+        parallelize_m: 0,
+        parallelize_k: 0,
+        m_tiles: 2, // number of tiles in M dimension
+        n_tiles: 1, // number of tiles in N dimension
+        k_tiles: 1, // number of tiles in K dimension
+        load_a: 1,
+        load_b: 1,
+        load_c: 1,
+        transa: false,
+        transb: true, // must be true for SIMD
+        M: 16,
+        N: 64,
+        K: 128,
+        alpha: 1,
+        beta: 0,
+        a_gelu: -0.2888,
+        b_gelu: -1.769,
+        flg_fp: "fused_linear_gelu_fp64_naive"
+    },
+    gemm : {
+        setup_ssr: 1,
+        parallelize_m: 0,
+        parallelize_k: 0,
+        m_tiles: 2,
+        n_tiles: 1,
+        k_tiles: 1,
+        load_a: 1,
+        load_b: 1,
+        load_c: 0,
+        transa: false,
+        transb: true,
+        M: 16,
+        N: 64,
+        K: 128,
+        alpha: 1,
+        beta: 0,
+        gemm_fp: "gemm_fp32_opt"
+    }
+}
