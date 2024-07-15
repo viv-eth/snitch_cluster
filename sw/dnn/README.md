@@ -43,5 +43,40 @@ The applications are compiled into a folder which can be enabled by adding `add_
 ## Requirements
 - `torch`
 
+# Running MHA and MLP Layers for ViT and GPT Models on Snitch Cluster
+
+## Introduction
+
+This repository provides implementations of the Multi-Head Attention (MHA) and Multi-Layer Perceptron (MLP) layers for Vision Transformers (ViT) and Generative Pre-trained Transformer (GPT) models.
+The applications are designed to run on the Snitch cluster, leveraging its unique architecture for efficient execution.
+This work stems from a journal paper currently under review at IEEE Transactions on Circuits and Systems for Artificial Intelligence. A preview of the paper can be found [here](https://arxiv.org/pdf/2405.19284).
+
+Figure 1 shows a block diagram of the basic Attention layer. 
+
+![Fig.1: Attention Layer](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/transformer_block.svg)
+
+## Getting Started
+
+### Installation
+
+Starting from the root directory of the repository, run the following commands to build the applications:
+
+```bash
+cd snitch_cluster
+git checkout llm/end-to-end
+cd target/snitch_cluster
+```
+
+### Building Hardware
+To build the hardware, navigate to the `target/snitch_cluster` directory and follow the instructions in the provided README file.
+This will set up the necessary environment and compile the hardware of the Snitch cluster.
+
+### Building Software
+
+Building Software Applications
+After setting up the hardware, you can build the software applications. Each application comes with a params.json file that defines its arguments and parameters. Below are the steps to build and run the MHA and MLP layers.
+
+MHA Layer
+Navigate to the MHA software directory and build the application:
 
 
