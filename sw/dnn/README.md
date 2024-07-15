@@ -51,9 +51,34 @@ This repository provides implementations of the Multi-Head Attention (MHA) and M
 The applications are designed to run on the Snitch cluster, leveraging its unique architecture for efficient execution.
 This work stems from a journal paper currently under review at IEEE Transactions on Circuits and Systems for Artificial Intelligence. A preview of the paper can be found [here](https://arxiv.org/pdf/2405.19284).
 
-Figure 1 shows a block diagram of the basic Attention layer. 
+The below figure shows a block diagram of the basic Attention layer. 
 
-![Fig.1: Attention Layer](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/transformer_block.svg)
+![Attention Layer](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/transformer_block.svg)
+
+## This Work
+
+In our work, we modified the basic Attention layer to include the following optimizations, as outlined in section V of our paper, titled "FOUNDATION MODEL LIBRARY":
+
+- **FlashAttention-2 Algorithm**:
+  We integrated the FlashAttention-2 algorithm into the Self-Attention mechanism. This enhancement significantly improves the computational efficiency by reducing memory usage and speeding up matrix multiplications, as depicted in the green section of the new topology diagram. For more details on the FlashAttention-2 algorithm, refer to the paper [FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning](https://arxiv.org/abs/2307.08691).
+
+- **Parallelization Techniques**:
+  By parallelizing over the heads, we achieved substantial performance gains. This approach maximizes the utilization of the Snitch cluster's resources, allowing for more efficient processing of large-scale models.
+
+- **FusedConcatLinear**:
+  We introduced a fused operation that combines the head concatenation with the subsequent linear layer. This optimization, shown in the pink section of the diagram, reduces the computational overhead and speeds up the overall processing time.
+
+- **LayerNorm and GELU Integration**:
+  Our implementation ensures that LayerNorm and GELU activations are optimally placed within the pipeline. This careful placement enhances the stability and performance of the model.
+
+- **Customized Hardware and Software Integration**:
+  The Snitch cluster's unique architecture is leveraged to its full potential through these optimizations. We tailored both hardware and software components to work seamlessly together, ensuring efficient execution of the MHA and MLP layers.
+
+The block diagram below illustrates the new topology we implemented to optimize the efficiency of running these layers on the Snitch cluster:
+
+![New Topology](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/new_trafo_topology.png)
+
+These enhancements collectively contribute to a more efficient and powerful implementation of the ViT and GPT models on the Snitch cluster, enabling faster training and inference times with lower resource consumption.
 
 ## Getting Started
 
@@ -73,10 +98,21 @@ This will set up the necessary environment and compile the hardware of the Snitc
 
 ### Building Software
 
-Building Software Applications
-After setting up the hardware, you can build the software applications. Each application comes with a params.json file that defines its arguments and parameters. Below are the steps to build and run the MHA and MLP layers.
+You can follow the above instructions to build the software applications. This will build all of the `dnn` applications, including the MHA and MLP layers for ViT and GPT models.
+If you prefer to only build the MHA and MLP layers, you can run the following commands:
 
-MHA Layer
-Navigate to the MHA software directory and build the application:
+```bash
+make DEBUG=ON sw/apps/dnn/<mlp or mha>
+```
 
+After building the software, you can run the applications on the Snitch cluster.
+Below is an example command using the `QuestaSim` simulator: 
+
+```bash
+bin/snitch_cluster.vsim sw/apps/dnn/<mlp or mha>/build/<mlp or mha>.elf
+```
+
+The parameters of the MHA and MLP layers can be configured in the `data/params.json` file. 
+The current configuration will run a single tile of the MHA and MLP computation.
+One can modify said parameters to compute the full ViT and GPT models, however, this will significantly increase the simulation time.
 
