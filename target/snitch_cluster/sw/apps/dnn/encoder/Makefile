@@ -4,4 +4,9 @@
 #
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
-from .scripts.datagen import *
+APP ?= encoder
+
+include ../../../../../../sw/dnn/common.mk
+include ../../common.mk
+
+$(DEP): $(DATA_H)

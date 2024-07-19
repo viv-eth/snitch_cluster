@@ -214,3 +214,6 @@ typedef struct network_single_cluster_t_ {
 #include "../mha/src/mha.h"
 #include "../mlp/src/mlp.h"
 #include "../softmax/src/softmax.h"
+
+// Level 3
+#include "../encoder/src/encoder.h"

@@ -13,7 +13,7 @@
 #include "layernorm_fp8.h"
 
 /**
- * @struct layernorm_layer_struct
+ * @struct layernorm_layer_t
  * @brief This structure contains all parameters necessary
  *        for computing the LayerNorm activation function
  * @var layernorm_layer_struct::batch_size
@@ -29,7 +29,7 @@
  * @var layernorm_layer_struct::ofmap
  * Pointer to output feature map
  */
-typedef struct layernorm_layer_struct {
+typedef struct {
     uint32_t batch_size;
     uint32_t seq_len;
     uint32_t embeddings;

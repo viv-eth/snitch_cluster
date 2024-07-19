@@ -1,9 +1,9 @@
-// Copyright 2023 ETH Zurich and University of Bologna.
-// Solderpad Hardware License, Version 0.51, see LICENSE for details.
-// SPDX-License-Identifier: SHL-0.51
+// Copyright 2024 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
 
 {
-    layernorm : {
+    layernorm: {
         input_dim: {
             batch_size: 1,
             seq_len: 16,
@@ -14,7 +14,7 @@
         n_tiles: 2,
         implementation: "OPT"
     },
-    'fused_linear_gelu' : {
+    'fused_linear_gelu': {
         setup_ssr: 1,
         parallelize_m: 0,
         parallelize_k: 0,
@@ -31,11 +31,9 @@
         K: 128,
         alpha: 1,
         beta: 0,
-        a_gelu: -0.2888,
-        b_gelu: -1.769,
-        flg_fp: "fused_linear_gelu_fp64_naive"
+        gemm_fp: "gemm_fp32_naive"
     },
-    gemm : {
+    gemm: {
         setup_ssr: 1,
         parallelize_m: 0,
         parallelize_k: 0,

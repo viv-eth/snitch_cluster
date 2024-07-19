@@ -7,7 +7,7 @@
 void fused_linear_gelu_fp32_naive(uint32_t M, uint32_t N, uint32_t K, void* A_p,
                      uint32_t ldA, uint32_t ta, void* B_p, uint32_t ldB,
                      uint32_t tb, void* C_p, uint32_t ldC, uint32_t BETA,
-                     uint32_t setup_SSR, float a_gelu, float b_gelu) {
+                     uint32_t setup_SSR) {
     
     float* A = (float*)A_p;
     float* B = (float*)B_p;
@@ -20,7 +20,7 @@ void fused_linear_gelu_fp32_naive(uint32_t M, uint32_t N, uint32_t K, void* A_p,
                 for (uint32_t k = 0; k < K; k++) {
                     c0 += A[k + m * ldA] * B[k * ldB + n];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0);
             }
         }
     } else if (ta && !tb) {
@@ -30,7 +30,7 @@ void fused_linear_gelu_fp32_naive(uint32_t M, uint32_t N, uint32_t K, void* A_p,
                 for (uint32_t k = 0; k < K; k++) {
                     c0 += A[k * M * ldA + m * ldA] * B[k * ldB + n];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0);
             }
         }
     } else if (!ta && tb) {
@@ -50,7 +50,7 @@ void fused_linear_gelu_fp32_naive(uint32_t M, uint32_t N, uint32_t K, void* A_p,
                 for (uint32_t k = 0; k < K; k++) {
                     c0 += A[k * M * ldA + m * ldA] * B[k + n * ldB];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0);
             }
         }
     }
@@ -59,8 +59,7 @@ void fused_linear_gelu_fp32_naive(uint32_t M, uint32_t N, uint32_t K, void* A_p,
 void fused_linear_gelu_fp32_naive_unrolled(uint32_t M, uint32_t N, uint32_t K, void* A_p,
                               uint32_t ldA, uint32_t ta, void* B_p,
                               uint32_t ldB, uint32_t tb, void* C_p,
-                              uint32_t ldC, uint32_t BETA, uint32_t setup_SSR,
-                              float a_gelu, float b_gelu) {
+                              uint32_t ldC, uint32_t BETA, uint32_t setup_SSR) {
     
     float* A = (float*)A_p;
     float* B = (float*)B_p;
@@ -87,10 +86,10 @@ void fused_linear_gelu_fp32_naive_unrolled(uint32_t M, uint32_t N, uint32_t K, v
                     c2 += A[(k + 2) + m * ldA] * B[(k + 2) * ldB + n];
                     c3 += A[(k + 3) + m * ldA] * B[(k + 3) * ldB + n];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu) + 
-                                 sigmoid_gelu_fp32(c1, a_gelu, b_gelu) + 
-                                 sigmoid_gelu_fp32(c2, a_gelu, b_gelu) +
-                                 sigmoid_gelu_fp32(c3, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0) + 
+                                 sigmoid_gelu_fp32(c1) + 
+                                 sigmoid_gelu_fp32(c2) +
+                                 sigmoid_gelu_fp32(c3);
             }
         }
     } else if (ta && !tb) {
@@ -110,10 +109,10 @@ void fused_linear_gelu_fp32_naive_unrolled(uint32_t M, uint32_t N, uint32_t K, v
                     c2 += A[(k + 2) * M * ldA + m * ldA] * B[(k + 2) * ldB + n];
                     c3 += A[(k + 3) * M * ldA + m * ldA] * B[(k + 3) * ldB + n];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu) + 
-                                 sigmoid_gelu_fp32(c1, a_gelu, b_gelu) + 
-                                 sigmoid_gelu_fp32(c2, a_gelu, b_gelu) +
-                                 sigmoid_gelu_fp32(c3, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0) + 
+                                 sigmoid_gelu_fp32(c1) + 
+                                 sigmoid_gelu_fp32(c2) +
+                                 sigmoid_gelu_fp32(c3);
             }
         }
     } else if (!ta && tb) {
@@ -133,10 +132,10 @@ void fused_linear_gelu_fp32_naive_unrolled(uint32_t M, uint32_t N, uint32_t K, v
                     c2 += A[(k + 2) + m * ldA] * B[(k + 2) + n * ldB];
                     c3 += A[(k + 3) + m * ldA] * B[(k + 3) + n * ldB];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu) + 
-                                 sigmoid_gelu_fp32(c1, a_gelu, b_gelu) + 
-                                 sigmoid_gelu_fp32(c2, a_gelu, b_gelu) +
-                                 sigmoid_gelu_fp32(c3, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0) + 
+                                 sigmoid_gelu_fp32(c1) + 
+                                 sigmoid_gelu_fp32(c2) +
+                                 sigmoid_gelu_fp32(c3);
             }
         }
     } else {
@@ -146,7 +145,7 @@ void fused_linear_gelu_fp32_naive_unrolled(uint32_t M, uint32_t N, uint32_t K, v
                 for (uint32_t k = 0; k < K; k++) {
                     c0 += A[k * M * ldA + m * ldA] * B[k + n * ldB];
                 }
-                C[m * ldC + n] = sigmoid_gelu_fp32(c0, a_gelu, b_gelu);
+                C[m * ldC + n] = sigmoid_gelu_fp32(c0);
             }
         }
     }
@@ -154,7 +153,7 @@ void fused_linear_gelu_fp32_naive_unrolled(uint32_t M, uint32_t N, uint32_t K, v
 
 void fused_linear_gelu_fp32_opt(uint32_t M, uint32_t N, uint32_t K, void* A_p, uint32_t ldA,
                    uint32_t ta, void* B_p, uint32_t ldB, uint32_t tb, void* C_p,
-                   uint32_t ldC, uint32_t BETA, uint32_t setup_SSR, float a_gelu, float b_gelu) {
+                   uint32_t ldC, uint32_t BETA, uint32_t setup_SSR) {
     
     // cast void pointers to float pointers
     float* A = (float*)A_p;
@@ -280,14 +279,14 @@ void fused_linear_gelu_fp32_opt(uint32_t M, uint32_t N, uint32_t K, void* A_p, u
                 : "ft0", "ft1", "ft2");
 
             // Store results
-            c[0][0] = sigmoid_gelu_fp32(c[0][0], a_gelu, b_gelu);
-            c[0][1] = sigmoid_gelu_fp32(c[1][0], a_gelu, b_gelu);
-            c[1][0] = sigmoid_gelu_fp32(c[2][0], a_gelu, b_gelu);
-            c[1][1] = sigmoid_gelu_fp32(c[3][0], a_gelu, b_gelu);
-            c[2][0] = sigmoid_gelu_fp32(c[4][0], a_gelu, b_gelu);
-            c[2][1] = sigmoid_gelu_fp32(c[5][0], a_gelu, b_gelu);
-            c[3][0] = sigmoid_gelu_fp32(c[6][0], a_gelu, b_gelu);
-            c[3][1] = sigmoid_gelu_fp32(c[7][0], a_gelu, b_gelu);
+            c[0][0] = sigmoid_gelu_fp32(c[0][0]);
+            c[0][1] = sigmoid_gelu_fp32(c[1][0]);
+            c[1][0] = sigmoid_gelu_fp32(c[2][0]);
+            c[1][1] = sigmoid_gelu_fp32(c[3][0]);
+            c[2][0] = sigmoid_gelu_fp32(c[4][0]);
+            c[2][1] = sigmoid_gelu_fp32(c[5][0]);
+            c[3][0] = sigmoid_gelu_fp32(c[6][0]);
+            c[3][1] = sigmoid_gelu_fp32(c[7][0]);
             ((v2f32*)_C)[0] = c[0];
             ((v2f32*)_C)[1] = c[1];
             ((v2f32*)_C)[2] = c[2];
@@ -305,7 +304,7 @@ void fused_linear_gelu_fp32_opt(uint32_t M, uint32_t N, uint32_t K, void* A_p, u
             for (uint32_t k = 0; k < K; k++) {
                 c += A[k + m * ldA] * B[k + n * ldB];
             }
-            C[m * ldC + n] = sigmoid_gelu_fp32(c, a_gelu, b_gelu);
+            C[m * ldC + n] = sigmoid_gelu_fp32(c);
         }
 
         snrt_ssr_enable();

@@ -7,26 +7,17 @@
 # Viviane Potocnik <vivianep@iis.ee.ethz.ch>
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
-import argparse
-import pathlib
-import json5
 import sys
-import os
 import torch
 import numpy as np
 
 import pyflexfloat as ff
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../util/sim/"))
-import data_utils  # noqa: E402
-from data_utils import emit_license, format_array_declaration, format_struct_definition, \
-                       format_array_definition, format_ifdef_wrapper  # noqa: E402
+from snitch.util.sim import data_utils
+from snitch.util.sim.data_utils import DataGen, format_array_declaration, \
+    format_struct_definition, format_array_definition
 
 torch.manual_seed(42)
-
-# AXI splits bursts crossing 4KB address boundaries. To minimize
-# the occurrence of these splits the data should be aligned to 4KB
-BURST_ALIGNMENT = 4096
 
 
 def golden_model(ifmap, eps):
@@ -43,112 +34,89 @@ def golden_model(ifmap, eps):
     return ofmap
 
 
-def golden_model_torch(ifmap, eps, shape):
-    ln = torch.nn.LayerNorm(shape, eps=eps)
-    return ln(ifmap)
+class LayernormDataGen(DataGen):
 
+    # AXI splits bursts crossing 4KB address boundaries. To minimize
+    # the occurrence of these splits the data should be aligned to 4KB
+    BURST_ALIGNMENT = 4096
 
-def validate_config(**kwargs):
-    # Aliases
-    batch_size = kwargs['input_dim']['batch_size']
-    seq_len = kwargs['input_dim']['seq_len']
-    embeddings = kwargs['input_dim']['embeddings']
+    def load_params(self, params):
+        self.batch_size = params['input_dim']['batch_size']
+        self.seq_len = params['input_dim']['seq_len']
+        self.embeddings = params['input_dim']['embeddings']
+        self.prec = params['prec']
+        self.ctype = data_utils.ctype_from_precision_t(self.prec)
+        self.eps = params['eps']
+        self.prec = params['prec']
+        self.n_tiles = params['n_tiles']
+        self.implementation = params['implementation']
 
-    # Calculate total TCDM occupation
-    prec = data_utils.size_from_precision_t(kwargs['prec'])
-    tiled_seq_len = seq_len / kwargs['n_tiles']
-    total_size = batch_size * tiled_seq_len * embeddings * prec
-    data_utils.validate_tcdm_footprint(total_size)
+    def golden_model(self, ifmap):
+        return golden_model(ifmap, self.eps)
 
-    assert kwargs['input_dim']['seq_len'] % kwargs['n_tiles'] == 0, 'Input dimension is not' \
-                                                                    ' an integer multiple of' \
-                                                                    ' tile size'
-    assert kwargs['prec'] != "FP64", 'FP64 not supported'
-    assert not (kwargs['implementation'] == "BASELINE"), 'No baseline implementations' \
-                                                         ' (switch to NAIVE)'
-    assert not (kwargs['implementation'] == "OPT_EX"), 'Expanding layernorm kernels not supported'
-    assert not (kwargs['prec'] == "FP8" and kwargs['implementation'] == "NAIVE"), 'FP8 not ' \
-                                                                                  'supported in' \
-                                                                                  'naive ' \
-                                                                                  'implementation'
+    def validate(self):
+        # Calculate total TCDM occupation
+        prec = data_utils.size_from_precision_t(self.prec)
+        tiled_seq_len = self.seq_len / self.n_tiles
+        total_size = self.batch_size * tiled_seq_len * self.embeddings * prec
+        data_utils.validate_tcdm_footprint(total_size)
 
+        assert self.seq_len % self.n_tiles == 0, 'Input dimension is not' \
+                                                 ' an integer multiple of' \
+                                                 ' tile size'
+        assert self.prec != "FP64", 'FP64 not supported'
+        assert not (self.implementation == "BASELINE"), 'No baseline implementations' \
+                                                        ' (switch to NAIVE)'
+        assert not (self.implementation == "OPT_EX"), 'Expanding layernorm kernels not supported'
+        assert not (self.prec == "FP8" and self.implementation == "NAIVE"), 'FP8 not ' \
+                                                                            'supported in' \
+                                                                            'naive ' \
+                                                                            'implementation'
 
-def emit_header(**kwargs):
+    def generate_ifmap(self):
+        ff_desc = data_utils.ff_desc_from_precision_t(self.prec)
+        return ff.array(np.random.rand(self.batch_size, self.seq_len, self.embeddings), ff_desc)
 
-    # Validate parameters
-    validate_config(**kwargs)
+    def emit_ifmap(self, uid, data):
+        self.ifmap_uid = uid
+        return format_array_definition(self.ctype, uid, data,
+                                       alignment=self.BURST_ALIGNMENT)
 
-    batch_size = kwargs['input_dim']['batch_size']
-    seq_len = kwargs['input_dim']['seq_len']
-    embeddings = kwargs['input_dim']['embeddings']
-    eps = kwargs['eps']
-    prec = kwargs['prec']
-    n_tiles = kwargs['n_tiles']
-    implementation = kwargs['implementation']
+    def emit_ofmap(self, uid, data):
+        self.ofmap_uid = uid
+        return format_array_declaration(self.ctype, uid, data.shape,
+                                        alignment=self.BURST_ALIGNMENT)
 
-    ff_desc = data_utils.ff_desc_from_precision_t(prec)
-    ctype = data_utils.ctype_from_precision_t(prec)
+    def emit_layer_struct(self, uid):
+        layer_cfg = {
+            'batch_size': self.batch_size,
+            'seq_len': self.seq_len,
+            'embeddings': self.embeddings,
+            'n_tiles': self.n_tiles,
+            'implementation': self.implementation,
+            'ifmap': self.ifmap_uid,
+            'ofmap': self.ofmap_uid,
+            'eps': self.eps,
+            'dtype': self.prec
+        }
+        return format_struct_definition('layernorm_layer_t', uid, layer_cfg)
 
-    # Generate random input
-    ifmap = ff.array(np.random.rand(batch_size, seq_len, embeddings), ff_desc)
-    ofmap = golden_model(ifmap, eps)
+    def emit_header(self, **kwargs):
+        header = [super().emit_header()]
 
-    ifmap_uid = 'ifmap'
-    ofmap_uid = 'ofmap'
+        self.load_params(kwargs)
+        self.validate()
 
-    layer_cfg = {
-        **kwargs['input_dim'],
-        'n_tiles': n_tiles,
-        'implementation': implementation,
-        'ifmap': ifmap_uid,
-        'ofmap': ofmap_uid,
-        'eps': eps,
-        'dtype': prec
-    }
+        ifmap = self.generate_ifmap()
+        ofmap = self.golden_model(ifmap)
 
-    data_str = [emit_license()]
-    data_str += [format_array_declaration(ctype, ifmap_uid, ifmap.shape,
-                 alignment=BURST_ALIGNMENT)]
-    data_str += [format_array_declaration(ctype, ofmap_uid, ofmap.shape,
-                 alignment=BURST_ALIGNMENT)]
-    data_str += [format_struct_definition('layernorm_layer_t', 'layer', layer_cfg)]
-    data_str += [format_array_definition(ctype, ifmap_uid, ifmap,
-                 alignment=BURST_ALIGNMENT)]
-    result_def = format_array_definition(ctype, 'golden', ofmap, alignment=BURST_ALIGNMENT)
-    data_str += [format_ifdef_wrapper('BIST', result_def)]
-    data_str = '\n\n'.join(data_str)
+        header += [self.emit_ifmap('ifmap', ifmap)]
+        header += [self.emit_ofmap('ofmap', ofmap)]
+        header += [self.emit_layer_struct('layer')]
+        header = '\n\n'.join(header)
 
-    return data_str
-
-
-def main():
-
-    parser = argparse.ArgumentParser(description='Generate data for layernorm kernel')
-    parser.add_argument(
-        "-c", "--cfg",
-        type=pathlib.Path,
-        required=True,
-        help='Select param config file kernel'
-    )
-    parser.add_argument(
-        '--section',
-        type=str,
-        help='Section to store matrices in')
-    parser.add_argument(
-        'output',
-        type=pathlib.Path,
-        help='Path of the output header file')
-    args = parser.parse_args()
-
-    # Load param config file
-    with args.cfg.open() as f:
-        param = json5.loads(f.read())
-    param['section'] = args.section
-
-    # Emit header file
-    with open(args.output, 'w') as f:
-        f.write(emit_header(**param))
+        return header
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(LayernormDataGen().main())

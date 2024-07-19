@@ -14,51 +14,14 @@
 #include "fused_linear_gelu_fp32.h"
 #include "fused_linear_gelu_fp64.h"
 
-/*
- * @struct flg_args_t
- * @brief This structure contains all parameters necessary
- *        for computing the fused linear GELU layer.
- *
- * @param flg_cfg: Pointer to the Fused Linear GELU configuration structure.
- * @param a_gelu: Pointer to the alpha parameter of the i-GELU function.
- * @param b_gelu: Pointer to the beta parameter of the i-GELU function.
- */
-
 typedef void (*flg_fp_t)(uint32_t m, uint32_t n, uint32_t k, void* a,
                           uint32_t lda, uint32_t transa, void* b,
                           uint32_t transb, uint32_t ldb, void* c, uint32_t ldc,
-                          uint32_t beta, uint32_t setup_ss, double a_gelu, double b_gelu);
+                          uint32_t beta, uint32_t setup_ssr);
 
-typedef struct flg_args_struct {
-    double alpha;
-    uint32_t prec;
-    uint32_t setup_ssr;
-    uint32_t parallelize_m;
-    uint32_t parallelize_k;
-    uint32_t m_tiles;
-    uint32_t n_tiles;
-    uint32_t k_tiles;
-    uint32_t load_a;
-    uint32_t load_b;
-    uint32_t load_c;
-    uint32_t transa;
-    uint32_t transb;
-    uint32_t M;
-    uint32_t N;
-    uint32_t K;
-    void* a;
-    void* b;
-    uint32_t beta;
-    void* c;
-    void* flg_fp;
-    double a_gelu;
-    double b_gelu;
-} flg_args_t;
-
-
-void sc_st_flg(flg_args_t* flg_args, void* a, void* b, uint32_t beta,
+void sc_st_flg(gemm_args_t* flg_args, void* a, void* b, uint32_t beta,
                 void* c) {
-    flg_fp_t impl = (flg_fp_t)flg_args->flg_fp;
+    flg_fp_t impl = (flg_fp_t)flg_args->gemm_fp;
     precision_t prec = flg_args->prec;
     uint32_t setup_ssr = flg_args->setup_ssr;
     uint32_t transa = flg_args->transa;
@@ -79,9 +42,6 @@ void sc_st_flg(flg_args_t* flg_args, void* a, void* b, uint32_t beta,
 
     double alpha = flg_args->alpha;
 
-    double a_gelu = flg_args->a_gelu;
-    double b_gelu = flg_args->b_gelu;
-
     if (snrt_is_compute_core()) {
         const uint32_t compute_num = snrt_cluster_compute_core_num();
         const uint32_t compute_id = snrt_cluster_core_idx();
@@ -101,18 +61,18 @@ void sc_st_flg(flg_args_t* flg_args, void* a, void* b, uint32_t beta,
 
         if (frac_m > 0)
             impl(frac_m, n, k, a + offsetA, lda_strided, transa, b, ldb, transb,
-                 c + offsetC, ldc_strided, (float)beta, setup_ssr, a_gelu, b_gelu);
+                 c + offsetC, ldc_strided, (float)beta, setup_ssr);
     }
 }
 
 // Derivate of the Multiple-cluster multiple-tile GEMM implementation.
 // This function computes the fused linear GELU layer.
-int fused_linear_gelu(flg_args_t* args) {
-    flg_args_t* local_args = snrt_l1_next();
+int fused_linear_gelu(gemm_args_t* args) {
+    gemm_args_t* local_args = snrt_l1_next();
 
     // Copy the arguments to local memory
     if (snrt_is_dm_core()) {
-        snrt_dma_start_1d(local_args, args, sizeof(flg_args_t));
+        snrt_dma_start_1d(local_args, args, sizeof(gemm_args_t));
         snrt_dma_wait_all();
     }
     snrt_cluster_hw_barrier();

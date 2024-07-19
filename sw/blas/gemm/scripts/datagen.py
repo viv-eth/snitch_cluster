@@ -9,37 +9,35 @@
 #          Luca Colagrande <colluca@iis.ee.ethz.ch>
 
 import numpy as np
-import os
 import re
 import pyflexfloat as ff
 import sys
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../util/sim/"))
-import data_utils  # noqa: E402
-from data_utils import DataGen, format_array_declaration, format_struct_definition, \
-                       format_array_definition, format_ifdef_wrapper  # noqa: E402
+from snitch.util.sim import data_utils
+from snitch.util.sim.data_utils import DataGen, format_array_declaration, \
+    format_struct_definition, format_array_definition
 
 
 np.random.seed(42)
 
 
+def golden_model(alpha, a, b, beta, c):
+    return alpha * np.matmul(a, b) + beta * c
+
+
+def exact_golden_model(a, b, beta, c):
+    M, N, K = a.shape[0], b.shape[1], b.shape[0]
+    result = beta * c
+    for m in range(M):
+        for n in range(N):
+            for k in range(K):
+                result[m][n] += a[m][k] * b[k][n]
+    return result
+
+
 class GemmDataGen(DataGen):
 
-    # AXI splits bursts crossing 4KB address boundaries. To minimize
-    # the occurrence of these splits the data should be aligned to 4KB
-    BURST_ALIGNMENT = 4096
-
-    def golden_model(self, alpha, a, b, beta, c):
-        return alpha * np.matmul(a, b) + beta * c
-
-    def exact_golden_model(self, alpha, a, b, beta, c):
-        M, N, K = a.shape[0], b.shape[1], b.shape[0]
-        result = beta * c
-        for m in range(M):
-            for n in range(N):
-                for k in range(K):
-                    result[m][n] += a[m][k] * b[k][n]
-        return result
+    def golden_model(self, a, b, c):
+        return exact_golden_model(a, b, self.beta, c)
 
     def infer_implementation(self, gemm_fp):
         # gemm_fp: "gemm_fp64_opt"
@@ -47,100 +45,137 @@ class GemmDataGen(DataGen):
         prec, impl = re.search(r'gemm_fp(\d+)_(\w+)', gemm_fp).group(1, 2)
         return (int(prec) / 8), impl
 
-    def validate_config(self, gemm_fp, parallelize_m,
-                        parallelize_k, m_tiles, n_tiles, k_tiles, transa,
-                        transb, M, N, K, beta, **kwargs):
-        frac_m = M / m_tiles
-        frac_n = N / n_tiles
-        frac_k = K / k_tiles
+    def load_params(self, params):
+        self.M = params.get('M')
+        self.N = params.get('N')
+        self.K = params.get('K')
+        self.m_tiles = params.get('m_tiles')
+        self.n_tiles = params.get('n_tiles')
+        self.k_tiles = params.get('k_tiles')
+        self.load_a = params.get('load_a')
+        self.load_b = params.get('load_b')
+        self.load_c = params.get('load_c')
+        self.setup_ssr = params.get('setup_ssr')
+        self.parallelize_m = params.get('parallelize_m')
+        self.parallelize_k = params.get('parallelize_k')
+        self.gemm_fp = params.get('gemm_fp')
+        self.transa = params.get('transa')
+        self.transb = params.get('transb')
+        self.alpha = params.get('alpha', 1)
+        self.beta = params.get('beta')
+        self.section = params.get('section')
+        self.dtype, self.impl = self.infer_implementation(self.gemm_fp)
+        self.prec = data_utils.size_from_precision_t(self.dtype)
+        self.ff_desc = data_utils.ff_desc_from_precision_t(self.dtype)
+        self.ctype = data_utils.ctype_from_precision_t(self.dtype)
 
-        dtype, impl = self.infer_implementation(gemm_fp)
+    def validate(self):
+        frac_m = self.M / self.m_tiles
+        frac_n = self.N / self.n_tiles
+        frac_k = self.K / self.k_tiles
 
         # Calculate total TCDM occupation
         # Note: doesn't account for double buffering
-        prec = data_utils.size_from_precision_t(dtype)
-        a_size = frac_m * frac_k * prec
-        b_size = frac_k * frac_n * prec
-        c_size = frac_m * frac_n * prec
+        a_size = frac_m * frac_k * self.prec
+        b_size = frac_k * frac_n * self.prec
+        c_size = frac_m * frac_n * self.prec
         total_size = a_size
         total_size += b_size
         total_size += c_size
         data_utils.validate_tcdm_footprint(total_size)
 
-        assert (M % m_tiles) == 0, 'M is not an integer multiple of tile size'
-        assert (N % n_tiles) == 0, 'N is not an integer multiple of tile size'
-        assert (K % k_tiles) == 0, 'K is not an integer multiple of tile size'
-        assert not (parallelize_m and parallelize_k), 'Cannot parallelize K and M simultaneously'
-        assert not transa, 'SIMD kernels don\'t support transposed A matrix'
-        assert (dtype == 8) or (impl == 'baseline') or (impl == 'naive') \
-            or transb, 'Optimized SIMD kernels only support transposed B matrix'
-        assert not transb or n_tiles == 1, 'Tiling in the N dimension not supported' \
+        assert self.alpha == 1, 'alpha != 1 not supported'
+        assert (self.M % self.m_tiles) == 0, 'M is not an integer multiple of tile size'
+        assert (self.N % self.n_tiles) == 0, 'N is not an integer multiple of tile size'
+        assert (self.K % self.k_tiles) == 0, 'K is not an integer multiple of tile size'
+        assert not (self.parallelize_m and self.parallelize_k), 'Cannot parallelize K and M' \
+            'simultaneously'
+        assert not self.transa, 'SIMD kernels don\'t support transposed A matrix'
+        assert (self.prec == 8) or (self.impl == 'baseline') or (self.impl == 'naive') \
+            or self.transb, 'Optimized SIMD kernels only support transposed B matrix'
+        assert not self.transb or self.n_tiles == 1, 'Tiling in the N dimension not supported' \
             ' if B is transposed'
-        assert not transb or k_tiles == 1, 'Tiling in the K dimension not supported' \
+        assert not self.transb or self.k_tiles == 1, 'Tiling in the K dimension not supported' \
             ' if B is transposed'
-        assert (impl == 'baseline') or (impl == 'naive') or frac_n >= 8, \
+        assert (self.impl == 'baseline') or (self.impl == 'naive') or frac_n >= 8, \
             'N dimension of tile size must be greater or equal to the unrolling factor (8) ' \
             'when using optimized kernels'
-        assert beta == 0 or beta == 1, 'Only values of 0 or 1 supported for beta'
-        assert not (dtype == 8 and impl == "baseline"), 'No baseline implemented' \
+        assert self.beta == 0 or self.beta == 1, 'Only values of 0 or 1 supported for beta'
+        assert not (self.prec == 8 and self.impl == "baseline"), 'No baseline implemented' \
             ' for FP64 (switch to NAIVE)'
-        assert not (((dtype == 8) or (dtype == 4)) and impl == "opt_ex"), \
+        assert not (((self.prec == 8) or (self.prec == 4)) and self.impl == "opt_ex"), \
             'Expanding GEMM kernels' \
             ' not supported for FP64 and FP32'
-        assert not (dtype == 1 and impl == "opt"), 'FP8 not supported in' \
+        assert not (self.prec == 1 and self.impl == "opt"), 'FP8 not supported in' \
             ' optimized implementation' \
             ' (switch to opt_ex)'
+
+    def generate_inputs(self):
+        a = ff.array(np.random.rand(self.M, self.K), self.ff_desc)
+        b = ff.array(np.random.rand(self.K, self.N), self.ff_desc)
+        c = ff.array(np.random.rand(self.M, self.N), self.ff_desc)
+        return a, b, c
+
+    def emit_a(self, uid, data):
+        self.a_uid = uid
+        # Store in transposed form if requested
+        data = data.T if self.transa else data
+        data = data.flatten()
+        return format_array_definition(self.ctype, uid, data, section=self.section)
+
+    def emit_b(self, uid, data):
+        self.b_uid = uid
+        # Store in transposed form if requested
+        data = data.T if self.transb else data
+        data = data.flatten()
+        return format_array_definition(self.ctype, uid, data, section=self.section)
+
+    def emit_c(self, uid, data, decl_only=False):
+        self.c_uid = uid
+        data = data.flatten()
+        if decl_only:
+            return format_array_declaration(self.ctype, uid, data.shape, section=self.section)
+        else:
+            return format_array_definition(self.ctype, uid, data, section=self.section)
+
+    def emit_layer_struct(self, uid):
+        layer_cfg = {
+            'prec': self.prec,
+            'setup_ssr': self.setup_ssr,
+            'parallelize_m': self.parallelize_m,
+            'parallelize_k': self.parallelize_k,
+            'm_tiles': self.m_tiles,
+            'n_tiles': self.n_tiles,
+            'k_tiles': self.k_tiles,
+            'load_a': self.load_a,
+            'load_b': self.load_b,
+            'load_c': self.load_c,
+            'transa': self.transa,
+            'transb': self.transb,
+            'M': self.M,
+            'N': self.N,
+            'K': self.K,
+            'alpha': self.alpha,
+            'beta': self.beta,
+            'gemm_fp': self.gemm_fp,
+            'a': self.a_uid,
+            'b': self.b_uid,
+            'c': self.c_uid,
+        }
+        return format_struct_definition('gemm_args_t', uid, layer_cfg)
 
     def emit_header(self, **kwargs):
         header = [super().emit_header()]
 
-        # Validate parameters
-        self.validate_config(**kwargs)
+        self.load_params(kwargs)
+        self.validate()
 
-        M, N, K = kwargs['M'], kwargs['N'], kwargs['K']
+        a, b, c = self.generate_inputs()
 
-        prec, _ = self.infer_implementation(kwargs['gemm_fp'])
-
-        ff_desc = data_utils.ff_desc_from_precision_t(prec)
-        ctype = data_utils.ctype_from_precision_t(prec)
-
-        a = ff.array(np.random.rand(M, K), ff_desc)
-        b = ff.array(np.random.rand(K, N), ff_desc)
-        c = ff.array(np.random.rand(M, N), ff_desc)
-        result = self.exact_golden_model(1, a, b, kwargs['beta'], c)
-
-        # Store matrices in transposed form if requested
-        a = a.T if kwargs['transa'] else a
-        b = b.T if kwargs['transb'] else b
-
-        a_uid = 'a'
-        b_uid = 'b'
-        c_uid = 'c'
-
-        cfg = {
-            'prec': prec,
-            **kwargs,
-            'a': a_uid,
-            'b': b_uid,
-            'c': c_uid,
-        }
-
-        a = a.flatten()
-        b = b.flatten()
-        c = c.flatten()
-
-        header += [format_array_declaration(ctype, a_uid, a.shape)]
-        header += [format_array_declaration(ctype, b_uid, b.shape)]
-        header += [format_array_declaration(ctype, c_uid, c.shape)]
-        header += [format_struct_definition('gemm_args_t', 'args', cfg)]
-        header += [format_array_definition(ctype, a_uid, a,
-                                           section=kwargs['section'])]
-        header += [format_array_definition(ctype, b_uid, b,
-                                           section=kwargs['section'])]
-        header += [format_array_definition(ctype, c_uid, c,
-                                           section=kwargs['section'])]
-        result_def = format_array_definition(ctype, 'result', result.flatten())
-        header += [format_ifdef_wrapper('BIST', result_def)]
+        header += [self.emit_a('a', a)]
+        header += [self.emit_b('b', b)]
+        header += [self.emit_c('c', c)]
+        header += [self.emit_layer_struct('args')]
         header = '\n\n'.join(header)
 
         return header

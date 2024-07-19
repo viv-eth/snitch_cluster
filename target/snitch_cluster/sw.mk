@@ -40,7 +40,6 @@ $(TARGET_C_HDRS_DIR)/snitch_cluster_peripheral.h: $(ROOT)/hw/snitch_cluster/src/
 
 APPS  = sw/apps/lto
 APPS += sw/apps/nop
-APPS += sw/apps/blas/axpy
 APPS += sw/apps/blas/gemm
 APPS += sw/apps/blas/dot
 APPS += sw/apps/dnn/batchnorm
@@ -57,6 +56,7 @@ APPS += sw/apps/dnn/fused_linear_gelu
 APPS += sw/apps/dnn/transpose
 APPS += sw/apps/dnn/mha
 APPS += sw/apps/dnn/mlp
+APPS += sw/apps/dnn/encoder
 APPS += sw/apps/montecarlo/pi_estimation
 APPS += sw/apps/atax
 APPS += sw/apps/correlation
@@ -78,3 +78,5 @@ sw/runtime/rtl sw/runtime/banshee: $(TARGET_C_HDRS)
 # Apps depend on runtime libraries
 $(APPS) sw/tests: $(RUNTIME)
 	$(MAKE) -C $@ $(MK_TARGET)
+
+include sw/apps/blas/axpy/Makefile

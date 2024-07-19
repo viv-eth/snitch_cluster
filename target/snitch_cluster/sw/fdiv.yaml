@@ -15,3 +15,6 @@ runs:
     cmd: [../../../sw/apps/correlation/scripts/verify.py, "${sim_bin}", "${elf}"]
   - elf: apps/covariance/build/covariance.elf
     cmd: [../../../sw/apps/covariance/scripts/verify.py, "${sim_bin}", "${elf}"]
+  - elf: apps/dnn/mha/build/mha.elf
+  - elf: apps/dnn/mlp/build/mlp.elf
+  - elf: apps/dnn/encoder/build/encoder.elf

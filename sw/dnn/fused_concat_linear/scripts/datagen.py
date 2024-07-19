@@ -5,107 +5,97 @@
 #
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
-import argparse
 import numpy as np
-import pathlib
-import json5
 import sys
-import os
 import torch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../util/sim/"))
-import data_utils  # noqa: E402
-from data_utils import emit_license, \
-                       format_struct_definition, format_array_definition, \
-                       format_array_declaration, format_ifdef_wrapper  # noqa: E402
+from snitch.util.sim import data_utils
+from snitch.util.sim.data_utils import DataGen, format_struct_definition, \
+    format_array_definition, format_array_declaration, format_ifdef_wrapper
 
 torch.manual_seed(42)
 
-# AXI splits bursts crossing 4KB address boundaries. To minimize
-# the occurrence of these splits the data should be aligned to 4KB
-BURST_ALIGNMENT = 4096
 
+class FusedConcatLinearDataGen(DataGen):
 
-def golden_model(inputs, weights):
-    innermost_dim = len(inputs[0].shape) - 1
-    concat_output = torch.cat(inputs, dim=innermost_dim)
-    linear_output = torch.matmul(concat_output, weights)
-    return linear_output, concat_output
+    def load_params(self, params):
+        self.num_inputs = params['num_inputs']
+        self.input_shape = params['input_shape']
+        self.output_shape = params['output_shape']
+        self.dtype = params['dtype']
+        self.gemm_implementation = params['gemm_implementation']
+        self.torch_type = data_utils.torch_type_from_precision_t(self.dtype)
+        self.ctype = data_utils.ctype_from_precision_t(self.dtype)
 
+    def validate(self):
+        assert self.input_shape[0] == self.output_shape[0], 'Inconsistent input and output shapes'
 
-def emit_header(section, params):
-    num_inputs = params['num_inputs']
-    input_shape = params['input_shape']
-    output_shape = params['output_shape']
-    prec = params['dtype']
+    def generate_inputs(self):
+        inputs = [torch.rand(*self.input_shape, requires_grad=False, dtype=self.torch_type)
+                  for _ in range(self.num_inputs)]
+        weights = torch.rand([self.input_shape[1]*self.num_inputs, self.output_shape[1]],
+                             requires_grad=False, dtype=self.torch_type)
+        return inputs, weights
 
-    assert input_shape[0] == output_shape[0], 'Inconsistent input and output shapes'
+    def golden_model(self, inputs, weights):
+        innermost_dim = len(inputs[0].shape) - 1
+        concat_output = torch.cat(inputs, dim=innermost_dim)
+        linear_output = torch.matmul(concat_output, weights)
+        return concat_output, linear_output
 
-    torch_type = data_utils.torch_type_from_precision_t(prec)
+    # Expects data to be an array of input tensors
+    def emit_inputs(self, uid, data):
+        self.inputs_uid = uid
+        stmts = [format_array_definition(self.ctype, f'{uid}_{i}', t)
+                 for i, t in enumerate(data)]
+        stmts += [format_array_definition('void*', uid,
+                  np.array([f'{uid}_{i}' for i in range(self.num_inputs)]))]
+        return '\n\n'.join(stmts)
 
-    inputs = [torch.rand(*input_shape, requires_grad=False, dtype=torch_type)
-              for _ in range(num_inputs)]
-    weights = torch.rand([input_shape[1]*num_inputs, output_shape[1]],
-                         requires_grad=False, dtype=torch_type)
-    linear_output, concat_output = golden_model(inputs, weights)
+    def emit_weights(self, uid, data):
+        self.weights_uid = uid
+        return format_array_definition(self.ctype, uid, data)
 
-    ctype = data_utils.ctype_from_precision_t(prec)
+    def emit_concat_o(self, uid, data):
+        self.concat_o_uid = uid
+        return format_array_declaration(self.ctype, uid, data.shape)
 
-    layer_cfg = {
-        **params,
-        'inputs': 'inputs',
-        'weights': 'weights',
-        'concat_output': 'concat_output',
-        'linear_output': 'linear_output'
-    }
+    def emit_linear_o(self, uid, data):
+        self.linear_o_uid = uid
+        return format_array_declaration(self.ctype, uid, data.shape)
 
-    data_str = [emit_license()]
-    data_str += [format_array_declaration(ctype, f'input_{i}', input_shape)
-                 for i in range(num_inputs)]
-    data_str += [format_array_declaration('void*', 'inputs', [num_inputs])]
-    data_str += [format_array_declaration(ctype, 'concat_output', concat_output.shape)]
-    data_str += [format_array_declaration(ctype, 'linear_output', linear_output.shape)]
-    data_str += [format_array_declaration(ctype, 'weights', weights.shape)]
-    data_str += [format_struct_definition('fused_concat_linear_layer_t', 'layer', layer_cfg)]
-    data_str += [format_array_definition(ctype, f'input_{i}', t)
-                 for i, t in enumerate(inputs)]
-    data_str += [format_array_definition('void*', 'inputs', np.array([f'input_{i}'
-                 for i in range(num_inputs)]))]
-    data_str += [format_array_definition(ctype, 'weights', weights)]
-    result_def = format_array_definition(ctype, 'golden', linear_output)
-    data_str += [format_ifdef_wrapper('BIST', result_def)]
-    data_str = '\n\n'.join(data_str)
+    def emit_layer_struct(self, uid):
+        layer_cfg = {
+            'num_inputs': self.num_inputs,
+            'input_shape': self.input_shape,
+            'output_shape': self.output_shape,
+            'dtype': self.dtype,
+            'gemm_implementation': self.gemm_implementation,
+            'inputs': self.inputs_uid,
+            'weights': self.weights_uid,
+            'concat_output': self.concat_o_uid,
+            'linear_output': self.linear_o_uid
+        }
+        return format_struct_definition('fused_concat_linear_layer_t', uid, layer_cfg)
 
-    return data_str
+    def emit_header(self, **kwargs):
+        header = [super().emit_header()]
 
+        self.load_params(kwargs)
+        self.validate()
 
-def main():
+        inputs, weights = self.generate_inputs()
+        concat_o, linear_o = self.golden_model(inputs, weights)
 
-    parser = argparse.ArgumentParser(description='Generate data for layernorm kernel')
-    parser.add_argument(
-        "-c", "--cfg",
-        type=pathlib.Path,
-        required=True,
-        help='Select param config file kernel'
-    )
-    parser.add_argument(
-        '--section',
-        type=str,
-        help='Section to store matrices in')
-    parser.add_argument(
-        'output',
-        type=pathlib.Path,
-        help='Path of the output header file')
-    args = parser.parse_args()
+        header += [self.emit_inputs('inputs', inputs)]
+        header += [self.emit_weights('weights', weights)]
+        header += [self.emit_concat_o('concat_output', concat_o)]
+        header += [self.emit_linear_o('linear_output', linear_o)]
+        header += [self.emit_layer_struct('layer')]
+        header = '\n\n'.join(header)
 
-    # Load param config file
-    with args.cfg.open() as f:
-        param = json5.loads(f.read())
-
-    # Emit header file
-    with open(args.output, 'w') as f:
-        f.write(emit_header(args.section, param))
+        return header
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(FusedConcatLinearDataGen().main())

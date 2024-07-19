@@ -7,12 +7,10 @@
 
 import sys
 import torch
-from pathlib import Path
-from datagen import golden_model
+from datagen import GeluDataGen
 
-sys.path.append(str(Path(__file__).parent / '../../../../util/sim/'))
-from verif_utils import Verifier  # noqa: E402
-from data_utils import ctype_from_precision_t  # noqa: E402
+from snitch.util.sim.verif_utils import Verifier
+from snitch.util.sim.data_utils import ctype_from_precision_t
 
 
 class GeluVerifier(Verifier):
@@ -36,7 +34,7 @@ class GeluVerifier(Verifier):
     def get_expected_results(self):
         ifmap = self.get_input_from_symbol('ifmap', ctype_from_precision_t(self.prec))
         ifmap = torch.from_numpy(ifmap)
-        return golden_model(ifmap).detach().numpy().flatten()
+        return GeluDataGen().golden_model(ifmap).detach().numpy().flatten()
 
     def check_results(self, *args):
         return super().check_results(*args, rtol=1E-10)

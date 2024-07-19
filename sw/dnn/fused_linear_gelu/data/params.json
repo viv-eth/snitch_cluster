@@ -19,7 +19,5 @@
     K: 16,
     alpha: 1,
     beta: 0,
-    a_gelu: -0.2888,
-    b_gelu: -1.769,
-    flg_fp: "fused_linear_gelu_fp64_naive"
+    gemm_fp: "gemm_fp64_naive"
 }
