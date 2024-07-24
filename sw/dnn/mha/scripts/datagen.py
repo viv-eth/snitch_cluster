@@ -69,6 +69,9 @@ class MHADataGen(DataGen):
         fa2_gen.q_uid = 'Q'
         fa2_gen.k_uid = 'K'
         fa2_gen.v_uid = 'V'
+        if kwargs['flashattention_2']['use_mask']:
+            mask = fa2_gen.generate_mask()
+            header += [fa2_gen.emit_mask('mask', mask)]
         header += [fa2_gen.emit_ofmap('fa2_o', fa2_o)]
         header += [fa2_gen.emit_layer_struct('flashattention_2_cfg')]
 

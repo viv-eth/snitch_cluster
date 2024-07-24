@@ -25,7 +25,7 @@ def torch_golden_model(Q, K, V):
     return torch.nn.functional.scaled_dot_product_attention(Q, K, V)
 
 
-def exact_golden_model(Q, K, V, B_r, B_c):
+def exact_golden_model(Q, K, V, B_r, B_c, mask=None):
     # Convert torch tensors to numpy arrays
     Q = Q.numpy()
     K = K.numpy()
@@ -55,6 +55,8 @@ def exact_golden_model(Q, K, V, B_r, B_c):
             V_j = V[start_col:end_col, ]
             # Compute O tile update
             S_ij = np.matmul(Q_i, K_t_j)
+            if mask is not None:
+                S_ij += mask[start_row:end_row, start_col:end_col]
             m_i_prev = m_i
             m_i = np.maximum(m_i_prev, np.max(S_ij, 1, keepdims=True))
             shifted_exp = np.exp(m_i_prev - m_i)
@@ -77,7 +79,7 @@ def exact_golden_model(Q, K, V, B_r, B_c):
     return np.concatenate(O_tiles, 0)
 
 
-def exact_flexfloat_golden_model(Q, K, V, B_r, B_c, desc):
+def exact_flexfloat_golden_model(Q, K, V, B_r, B_c, desc, mask=None):
     # Get layer dimensions
     L = Q.shape[0]
     d = Q.shape[1]
@@ -105,6 +107,8 @@ def exact_flexfloat_golden_model(Q, K, V, B_r, B_c, desc):
             # Compute O tile update
             S_ij = ff.array(np.zeros((B_r, B_c)), desc)
             S_ij = gemm.exact_golden_model(Q_i, K_t_j, 0, S_ij)
+            if mask is not None:
+                S_ij += mask[start_row:end_row, start_col:end_col]
             m_i_prev = m_i
             m_i = np.maximum(m_i_prev, np.max(S_ij, 1, keepdims=True))
             shifted_exp = np.exp((m_i_prev.astype(np.float32) - m_i.astype(np.float32)))
@@ -150,6 +154,7 @@ class FlashAttention2DataGen(DataGen):
         self.B_c = params['B_c']
         self.dtype = params['dtype']
         self.baseline = params['baseline']
+        self.use_mask = params['use_mask']
         self.gemm_impl = self.get_gemm_implementation(params)
         # self.torch_type = data_utils.torch_type_from_precision_t(self.dtype)
         self.ff_desc = data_utils.ff_desc_from_precision_t(self.dtype)
@@ -170,6 +175,7 @@ class FlashAttention2DataGen(DataGen):
         o_fa_size = self.B_r * self.d * self.prec
         m_i_size = self.B_r * self.prec
         l_i_size = self.B_r * self.prec
+        mask_size = self.B_r * self.B_c * self.prec if self.use_mask else 0
         total_size = q_fa_size
         total_size += k_fa_size
         total_size += v_fa_size * 2  # V and V^t
@@ -178,6 +184,7 @@ class FlashAttention2DataGen(DataGen):
         total_size += o_fa_size
         total_size += m_i_size * 2  # m_i and m_i_prev
         total_size += l_i_size
+        total_size += mask_size
         data_utils.validate_tcdm_footprint(total_size)
 
         # Q*K^t
@@ -233,6 +240,11 @@ class FlashAttention2DataGen(DataGen):
         K = ff.array(np.random.rand(self.S, self.d), self.ff_desc)
         V = ff.array(np.random.rand(self.S, self.d), self.ff_desc)
         return Q, K, V
+    
+    def generate_mask(self):
+        mask = ff.array(np.zeros((self.L, self.S)), self.ff_desc)
+        mask[np.triu_indices(self.L, 1)] = -np.inf
+        return mask
 
     def golden_model(self, Q, K, V):
         return exact_flexfloat_golden_model(Q, K, V, self.B_r, self.B_c, self.ff_desc)
@@ -248,6 +260,10 @@ class FlashAttention2DataGen(DataGen):
     def emit_v(self, uid, data):
         self.v_uid = uid
         return format_array_definition(self.ctype, uid, data)
+    
+    def emit_mask(self, uid, data):
+        self.mask_uid = uid
+        return format_array_definition(self.ctype, uid, data)
 
     def emit_ofmap(self, uid, data):
         self.ofmap_uid = uid
@@ -262,11 +278,12 @@ class FlashAttention2DataGen(DataGen):
             'B_c': self.B_c,
             'dtype': self.dtype,
             'baseline': self.baseline,
+            'use_mask': self.use_mask,
             'gemm_implementation': self.gemm_impl,
             'Q': self.q_uid,
             'K': self.k_uid,
             'V': self.v_uid,
-            'O': self.ofmap_uid,
+            'O': self.ofmap_uid
         }
         return format_struct_definition('flashattention_2_layer_t', uid, layer_cfg)
 
@@ -277,11 +294,15 @@ class FlashAttention2DataGen(DataGen):
         self.validate()
 
         Q, K, V = self.generate_inputs()
+        mask = self.generate_mask() if self.use_mask else None
         ofmap = self.golden_model(Q, K, V)
 
         header += [self.emit_q('Q', Q)]
         header += [self.emit_k('K', K)]
         header += [self.emit_v('V', V)]
+        if self.use_mask:
+            print('Using mask')
+            header += [self.emit_mask('mask', mask)]
         header += [self.emit_ofmap('O', ofmap)]
         header += [self.emit_layer_struct('layer')]
         header = '\n\n'.join(header)

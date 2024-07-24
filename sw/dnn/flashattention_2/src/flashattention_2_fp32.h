@@ -19,6 +19,8 @@ static inline void flashattention_2_fp32(flashattention_2_layer_t layer) {
     float *K_l3 = layer.K;
     float *V_l3 = layer.V;
     float *O_l3 = layer.O;
+    float *mask_l3 = layer.mask;
+    uint32_t use_mask = layer.use_mask;
 
     // gemm specific parameters
     gemm_args_t gemm_args;
@@ -70,6 +72,8 @@ static inline void flashattention_2_fp32(flashattention_2_layer_t layer) {
     float *V_fa = tcdm_ptr;
     tcdm_ptr += v_fa_size;
     float *S_fa = tcdm_ptr;
+    tcdm_ptr += s_fa_size;
+    float *mask = tcdm_ptr;
     tcdm_ptr += s_fa_size;
     float *P_fa = tcdm_ptr;
     tcdm_ptr += p_fa_size;
@@ -157,6 +161,17 @@ static inline void flashattention_2_fp32(flashattention_2_layer_t layer) {
                                       d,             // full_x0_size
                                       sizeof(float)  // prec
                 );
+                if (use_mask == 1) {
+                    snrt_dma_load_2d_tile(mask,          // dst
+                                          mask_l3,       // src
+                                          t_r,           // tile_x1_idx
+                                          t_c,           // tile_x0_idx
+                                          B_r,           // tile_x1_size
+                                          B_c,           // tile_x0_size
+                                          B_c,           // full_x0_size
+                                          sizeof(float)  // prec
+                    );
+                }
                 snrt_dma_wait_all();
             }
             snrt_cluster_hw_barrier();
@@ -171,6 +186,19 @@ static inline void flashattention_2_fp32(flashattention_2_layer_t layer) {
                 local_args->N = B_c;
                 local_args->K = d;
                 sc_st_gemm(local_args, Q_fa, K_fa, 0, S_fa);
+
+                snrt_cluster_hw_barrier();
+
+                snrt_mcycle();
+
+                // Apply mask to S tile if use_mask is set
+                if (use_mask == 1) {
+                    for (int row_idx = start_row; row_idx < end_row; row_idx++) {
+                        for (int col_idx = 0; col_idx < B_c; col_idx++) {
+                            S_fa[row_idx * B_c + col_idx] += mask[row_idx * B_c + col_idx];
+                        }
+                    }
+                }
 
                 snrt_cluster_hw_barrier();
 
@@ -257,6 +285,7 @@ static inline void flashattention_2_fp32(flashattention_2_layer_t layer) {
                     sc_st_gemm(local_args, P_fa, V_t, beta, O_fa);
                 }
             } else {
+                snrt_cluster_hw_barrier();
                 snrt_cluster_hw_barrier();
                 snrt_cluster_hw_barrier();
                 snrt_mcycle();

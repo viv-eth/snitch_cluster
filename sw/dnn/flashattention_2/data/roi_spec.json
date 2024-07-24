@@ -1,0 +1,591 @@
+[
+    {
+        "thread": "hart_0",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_1",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_2",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_3",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_4",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_5",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_6",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_7",
+        "roi": [
+            {
+                "idx": 2,
+                "label": "Init"
+            },
+            {
+                "idx": 4,
+                "label": "QxKt"
+            },
+            {
+                "idx": 5,
+                "label": "softmax"
+            },
+            {
+                "idx": 6,
+                "label": "PxV"
+            },
+            {
+                "idx": 8,
+                "label": "QxKt"
+            },
+            {
+                "idx": 9,
+                "label": "softmax"
+            },
+            {
+                "idx": 10,
+                "label": "PxV"
+            },
+            {
+                "idx": 11,
+                "label": "rescale"
+            },
+            {
+                "idx": 14,
+                "label": "Init"
+            },
+            {
+                "idx": 16,
+                "label": "QxKt"
+            },
+            {
+                "idx": 17,
+                "label": "softmax"
+            },
+            {
+                "idx": 18,
+                "label": "PxV"
+            },
+            {
+                "idx": 20,
+                "label": "QxKt"
+            },
+            {
+                "idx": 21,
+                "label": "softmax"
+            },
+            {
+                "idx": 22,
+                "label": "PxV"
+            },
+            {
+                "idx": 23,
+                "label": "rescale"
+            }
+        ]
+    },
+    {
+        "thread": "hart_8",
+        "roi": [
+            {
+                "idx": 1,
+                "label": "Copy Q"
+            },
+            {
+                "idx": 3,
+                "label": "Copy K & V"
+            },
+            {
+                "idx": 7,
+                "label": "Copy K & V"
+            },
+            {
+                "idx": 12,
+                "label": "Copy O"
+            },
+            {
+                "idx": 13,
+                "label": "Copy Q"
+            },
+            {
+                "idx": 15,
+                "label": "Copy K & V"
+            },
+            {
+                "idx": 19,
+                "label": "Copy K & V"
+            },
+            {
+                "idx": 24,
+                "label": "Copy O"
+            }
+        ]
+    }
+]

@@ -43,7 +43,9 @@ typedef struct flashattention_2_layer_struct {
     void *K;
     void *V;
     void *O;
+    void *mask;
     precision_t dtype;
+    uint32_t use_mask;
     uint32_t baseline;
     void *gemm_implementation;
 } flashattention_2_layer_t;
