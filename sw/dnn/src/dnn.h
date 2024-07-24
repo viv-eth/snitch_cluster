@@ -217,3 +217,4 @@ typedef struct network_single_cluster_t_ {
 
 // Level 3
 #include "../encoder/src/encoder.h"
+#include "../decoder/src/decoder.h"

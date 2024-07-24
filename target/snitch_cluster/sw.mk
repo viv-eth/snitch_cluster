@@ -57,6 +57,7 @@ APPS += sw/apps/dnn/transpose
 APPS += sw/apps/dnn/mha
 APPS += sw/apps/dnn/mlp
 APPS += sw/apps/dnn/encoder
+APPS += sw/apps/dnn/decoder
 APPS += sw/apps/montecarlo/pi_estimation
 APPS += sw/apps/atax
 APPS += sw/apps/correlation
