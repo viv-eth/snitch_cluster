@@ -181,6 +181,12 @@ def format_array_initializer(dtype, array):
             el_str = f'{hex(el.bits())}'
         else:
             el_str = f'{el}'
+            # handle infinity
+            if isinstance(el, float):
+                if np.isposinf(el):
+                    el_str = 'INFINITY'
+                elif np.isneginf(el):
+                    el_str = '-INFINITY'
         s += f'\t{el_str},\n'
     s += '}'
     return s
