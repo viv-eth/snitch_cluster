@@ -41,6 +41,7 @@
             B_r: 16,
             B_c: 16,
             dtype: "FP32",
+            use_mask: false,
             baseline: false
         },
         'fused_concat_linear': {
