@@ -9,12 +9,13 @@
 #include "snrt.h"
 
 typedef struct {
+    uint32_t num_heads;
     layernorm_layer_t *layernorm1_cfg;
     layernorm_layer_t *layernorm2_cfg;
-    gemm_args_t *gemmQ_cfg;
-    gemm_args_t *gemmK_cfg;
-    gemm_args_t *gemmV_cfg;
-    flashattention_2_layer_t *flashattention_2_cfg;
+    gemm_args_t *gemmQ_cfgs;
+    gemm_args_t *gemmK_cfgs;
+    gemm_args_t *gemmV_cfgs;
+    flashattention_2_layer_t *flashattention_2_cfgs;
     fused_concat_linear_layer_t *fcl_cfg;
 } mha_args_t;
 
@@ -27,23 +28,27 @@ static inline void mha_layer(mha_args_t *mha_args) {
     layernorm_layer(*mha_args->layernorm2_cfg);
     snrt_cluster_hw_barrier();
 
-    // GEMM: X1_output * W_q
-    gemm(mha_args->gemmQ_cfg);
-    snrt_cluster_hw_barrier();
+    uint32_t heads_per_cluster = mha_args->num_heads / snrt_cluster_num();
+    for (int head = 0; head < heads_per_cluster; head++) {
+        uint32_t cur_head = snrt_cluster_idx() * heads_per_cluster + head;
+        // GEMM: X1_output * W_q
+        gemm(&mha_args->gemmQ_cfgs[cur_head]);
+        snrt_cluster_hw_barrier();
 
-    // GEMM: X2_output * W_k
-    gemm(mha_args->gemmK_cfg);
-    snrt_cluster_hw_barrier();
+        // GEMM: X2_output * W_k
+        gemm(&mha_args->gemmK_cfgs[cur_head]);
+        snrt_cluster_hw_barrier();
 
-    // GEMM: X2_output * W_v
-    gemm(mha_args->gemmV_cfg);
-    snrt_cluster_hw_barrier();
+        // GEMM: X2_output * W_v
+        gemm(&mha_args->gemmV_cfgs[cur_head]);
+        snrt_cluster_hw_barrier();
 
-    // FlashAttention-2: Q, K, V
-    flashattention_2_layer(*mha_args->flashattention_2_cfg);
-    snrt_cluster_hw_barrier();
+        // FlashAttention-2: Q, K, V
+        flashattention_2_layer(mha_args->flashattention_2_cfgs[cur_head]);
+        snrt_cluster_hw_barrier();
 
-    // FusedConcatLinear Layer
+    }
+
     fused_concat_linear_layer(*mha_args->fcl_cfg);
     snrt_cluster_hw_barrier();
 }

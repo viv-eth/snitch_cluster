@@ -19,12 +19,15 @@ static inline void mlp_layer(mlp_args_t *mlp_args) {
     // LayerNorm of MLP
     layernorm_layer(*mlp_args->layernorm_cfg);
     snrt_cluster_hw_barrier();
+    DUMP(0x88888888);
 
     // Fused Linear GELU
     fused_linear_gelu(mlp_args->flg_cfg);
     snrt_cluster_hw_barrier();
+    DUMP(0x99999999);
 
     // GEMM
     gemm(mlp_args->linear_cfg);
     snrt_cluster_hw_barrier();
+    DUMP(0xAAAAAAAA);
 }

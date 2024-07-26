@@ -8,6 +8,7 @@
 #include "dnn.h"
 
 typedef struct {
+    uint32_t num_layers;
     mha_args_t *mha_args;
     mlp_args_t *mlp_args;
 } decoder_args_t;

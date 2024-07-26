@@ -269,7 +269,7 @@ class FlashAttention2DataGen(DataGen):
         self.ofmap_uid = uid
         return format_array_declaration(self.ctype, uid, data.shape)
 
-    def emit_layer_struct(self, uid):
+    def emit_layer_struct(self, uid, return_cfg=False):
         layer_cfg = {
             'L': self.L,
             'S': self.S,
@@ -285,6 +285,8 @@ class FlashAttention2DataGen(DataGen):
             'V': self.v_uid,
             'O': self.ofmap_uid
         }
+        if return_cfg:
+            return layer_cfg
         return format_struct_definition('flashattention_2_layer_t', uid, layer_cfg)
 
     def emit_header(self, **kwargs):

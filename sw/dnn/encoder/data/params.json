@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 {
+    num_layers : 1,
     mha: {
+        num_heads: 1,
         layernorm: {
             input_dim: {
                 batch_size: 1,

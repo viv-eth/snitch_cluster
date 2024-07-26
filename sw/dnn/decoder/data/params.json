@@ -4,6 +4,7 @@
 
 {
     mha: {
+        num_heads: 1,
         layernorm: {
             input_dim: {
                 batch_size: 1,

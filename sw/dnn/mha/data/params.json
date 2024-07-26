@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 {
-    nr_heads: 1,
+    num_heads: 1,
     layernorm: {
         input_dim: {
             batch_size: 1,
@@ -41,6 +41,7 @@
         B_r: 16,
         B_c: 16,
         dtype: "FP32",
+        use_mask: true,
         baseline: false
     },
     'fused_concat_linear': {

@@ -138,7 +138,7 @@ class GemmDataGen(DataGen):
         else:
             return format_array_definition(self.ctype, uid, data, section=self.section)
 
-    def emit_layer_struct(self, uid):
+    def emit_layer_struct(self, uid, return_cfg=False):
         layer_cfg = {
             'prec': self.prec,
             'setup_ssr': self.setup_ssr,
@@ -162,6 +162,8 @@ class GemmDataGen(DataGen):
             'b': self.b_uid,
             'c': self.c_uid,
         }
+        if return_cfg:
+            return layer_cfg
         return format_struct_definition('gemm_args_t', uid, layer_cfg)
 
     def emit_header(self, **kwargs):

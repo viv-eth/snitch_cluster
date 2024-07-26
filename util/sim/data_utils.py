@@ -157,6 +157,17 @@ def format_array_definition(dtype, uid, array, alignment=None, section=None):
     s += ';'
     return s
 
+def format_cfgs_array(cfg_type, cfg_name, cfgs, num_heads):
+    formatted_array = f"{cfg_type} {cfg_name}[{num_heads}] = {{\n"
+    for cfg in cfgs:
+        formatted_array += "{\n"
+        for k, v in cfg.items():
+            if isinstance(v, bool):
+                v = str(int(v))
+            formatted_array += f"    .{k} = {v},\n"
+        formatted_array += "},\n"
+    formatted_array += "};"
+    return formatted_array
 
 def format_scalar_definition(dtype, uid, scalar):
     s = f'{_alias_dtype(dtype)} {uid} = {scalar};'
@@ -191,6 +202,12 @@ def format_array_initializer(dtype, array):
     s += '}'
     return s
 
+def format_struct_initializer(struct):
+    s = '{\n'
+    for k, v in struct.items():
+        s += f'    .{k} = {v},\n'
+    s += '}'
+    return s
 
 def format_struct_definition(dtype, uid, map):
     def format_value(value):
