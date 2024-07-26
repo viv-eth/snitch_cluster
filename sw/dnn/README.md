@@ -43,12 +43,11 @@ The applications are compiled into a folder which can be enabled by adding `add_
 ## Requirements
 - `torch`
 
-# Running MHA and MLP Layers for ViT and GPT Models on Snitch Cluster
+# Running ViT and GPT Models on the Snitch Cluster
 
 ## Introduction
 
-This repository provides implementations of the Multi-Head Attention (MHA) and Multi-Layer Perceptron (MLP) layers for Vision Transformers (ViT) and Generative Pre-trained Transformer (GPT) models.
-The applications are designed to run on the Snitch cluster, leveraging its unique architecture for efficient execution.
+This repository provides implementations of the Multi-Head Attention (MHA) and Multi-Layer Perceptron (MLP) layers for Vision Transformers (ViT) and Generative Pre-trained Transformer (GPT) models. The applications are designed to run on the Snitch cluster, leveraging its unique architecture for efficient execution.
 This work stems from a journal paper currently under review at IEEE Transactions on Circuits and Systems for Artificial Intelligence. A preview of the paper can be found [here](https://arxiv.org/pdf/2405.19284).
 
 The below figure shows a block diagram of the basic Attention layer. 
@@ -96,23 +95,42 @@ cd target/snitch_cluster
 To build the hardware, navigate to the `target/snitch_cluster` directory and follow the instructions in the provided README file.
 This will set up the necessary environment and compile the hardware of the Snitch cluster.
 
-### Building Software
+### Full Model Simulation (Slow)
+
+To simulate the full ViT (encoder) or GPT (decoder) model, you can build the `encoder` and `decoder` application with the correct configuration file. 
+The configuration files for the ViT model can be found in the `sw/dnn/encoder/data` directory, while the GPT model configuration files are located in the `sw/dnn/decoder/data` directory.
+The prefixes of the subdirectories indicate the model architecture. Furthermore, we provide the configuration files for `FP32`, `FP16`, nd `FP8` precision. The following table summarizes the available configurations:
+
+
+| Models| ViT-B | ViT-L | ViT-H   | GPT3-XL   | GPT-J  |
+|------|-------|-------|---------|-----------|--------|
+| Blocks | 12  | 24    | 32      | 40        | 28     |
+| Params | 86M | 307M  | 632M    | 1.3B      | 6B     |
+| E      | 768 | 1024  | 1280    | 2048      | 4096   |
+| P      | 64  | 64    | 80      | 128       | 256    |
+| S      | 197 | 197   | 197     | [128-2048]| [128-2048] |
+| FF     | 3072| 4096  | 5120    | 8192      | 16384  |
+| H      | 12  | 16    | 16      | 16        | 16     |
+
+The default configuration from the `params.json` can be overwritten by setting the `DATA_CFG` environment variable. An example command to run the ViT-B model in `FP16` precision is shown below:
+
+```bash
+make DEBUG=ON DATA_CFG=sw/dnn/encoder/data/vit-b/vit-b-fp16.json sw/apps/dnn/encoder
+```
+
+After building the software, you can run the applications on the Snitch cluster. Below is an example command using the `QuestaSim` simulator: 
+
+```bash
+bin/snitch_cluster.vsim sw/apps/dnn/<app_name>/build/<app_name>.elf
+```
+
+### Single Layer Simulation (Fast)
 
 You can follow the above instructions to build the software applications. This will build all of the `dnn` applications, including the MHA and MLP layers for ViT and GPT models.
 If you prefer to only build the MHA and MLP layers, you can run the following commands:
 
 ```bash
-make DEBUG=ON sw/apps/dnn/<mlp or mha>
+make DEBUG=ON sw/apps/dnn/<app_name>
 ```
 
-After building the software, you can run the applications on the Snitch cluster.
-Below is an example command using the `QuestaSim` simulator: 
-
-```bash
-bin/snitch_cluster.vsim sw/apps/dnn/<mlp or mha>/build/<mlp or mha>.elf
-```
-
-The parameters of the MHA and MLP layers can be configured in the `data/params.json` file. 
-The current configuration will run a single tile of the MHA and MLP computation.
-One can modify said parameters to compute the full ViT and GPT models, however, this will significantly increase the simulation time.
-
+The parameters of the MHA and MLP layers can be configured in the `data/params.json` file.  The current configuration will run a single tile of the MHA and MLP computation.
