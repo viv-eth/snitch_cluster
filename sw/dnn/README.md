@@ -116,7 +116,7 @@ The prefixes of the subdirectories indicate the model architecture. Furthermore,
 
 Below figure gives an overview of the most important directories and files for building the encoder and decoder applications.
 
-![Repository Info](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/repo_llm.pdf)
+![Repository Info](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/repo_llm.png)
 
 #### Building the Software
 
