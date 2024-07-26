@@ -112,11 +112,31 @@ The prefixes of the subdirectories indicate the model architecture. Furthermore,
 | FF     | 3072| 4096  | 5120    | 8192      | 16384  |
 | H      | 12  | 16    | 16      | 16        | 16     |
 
+#### Repository Overview
+
+Below figure gives an overview of the most important directories and files for building the encoder and decoder applications.
+
+![Repository Info](https://github.com/viv-eth/snitch_cluster/blob/llm/end-to-end/repo_llm.pdf)
+
+#### Building the Software
+
 The default configuration from the `params.json` can be overwritten by setting the `DATA_CFG` environment variable. An example command to run the ViT-B model in `FP16` precision is shown below:
 
 ```bash
 make DEBUG=ON DATA_CFG=sw/dnn/encoder/data/vit-b/vit-b-fp16.json sw/apps/dnn/encoder
 ```
+
+This will build the binary that will run on the Snitch cluster target and generate the data for the model. If you wish to re-generate the data independently, you can use the provided Python script `datagen.py`. This script generates the input data and expected results for the specified model and configuration. The generated data is stored in the `data` directory of the respective model. We provided the configurations for the benchmarked models in the `encoder/data` and `decoder/data` directories.
+
+The command for data generation is as follows:
+
+```bash
+python sw/dnn/decoder/scripts/datagen.py -c sw/dnn/<app_name>/data/<model>/<model-fpXX>.json --section="" sw/dnn/<app_name>/data/data.h
+```
+
+This will generate the data header file `data.h` in the specified output directory `sw/dnn/<app_name>/data/`.
+
+#### Running the Application
 
 After building the software, you can run the applications on the Snitch cluster. Below is an example command using the `QuestaSim` simulator: 
 
