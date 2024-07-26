@@ -1,0 +1,108 @@
+// Copyright 2024 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+{
+    num_layers : 12,
+    mha: {
+        num_heads: 12,
+        layernorm: {
+            input_dim: {
+                batch_size: 1,
+                seq_len: 197,
+                embeddings: 768
+            },
+            eps: 1e-5,
+            prec: "FP32",
+            n_tiles: 5,
+            implementation: "OPT"
+        },
+        gemm: {
+            setup_ssr: 1,
+            parallelize_m: 0,
+            parallelize_k: 0,
+            m_tiles: 25,
+            n_tiles: 1,
+            k_tiles: 6,
+            load_a: 1,
+            load_b: 1,
+            load_c: 0,
+            transa: false,
+            transb: true,
+            M: 197,
+            N: 64,
+            K: 768,
+            alpha: 1,
+            beta: 0,
+            gemm_fp: "gemm_fp32_opt"
+        },
+        flashattention_2: {
+            L: 197,
+            S: 197,
+            d: 64,
+            B_r: 16,
+            B_c: 16,
+            dtype: "FP32",
+            use_mask: false,
+            baseline: false
+        },
+        'fused_concat_linear': {
+            num_inputs: 12,
+            input_shape: [16, 64],
+            output_shape: [16, 128],
+            dtype: "FP32",
+            gemm_implementation: "gemm_fp32_opt"
+        }
+    },
+    mlp: {
+        layernorm: {
+            input_dim: {
+                batch_size: 1,
+                seq_len: 197,
+                embeddings: 768
+            },
+            eps: 1e-5,
+            prec: "FP32",
+            n_tiles: 5,
+            implementation: "OPT"
+        },
+        'fused_linear_gelu': {
+            setup_ssr: 1,
+            parallelize_m: 0,
+            parallelize_k: 0,
+            m_tiles: 25, // number of tiles in M dimension
+            n_tiles: 1, // number of tiles in N dimension
+            k_tiles: 6, // number of tiles in K dimension
+            load_a: 1,
+            load_b: 1,
+            load_c: 1,
+            transa: false,
+            transb: true, // must be true for SIMD
+            M: 197,
+            N: 64,
+            K: 768,
+            alpha: 1,
+            beta: 0,
+            gemm_fp: "gemm_fp32_opt"
+        },
+        gemm: {
+            setup_ssr: 1,
+            parallelize_m: 0,
+            parallelize_k: 0,
+            m_tiles: 25,
+            n_tiles: 12,
+            k_tiles: 24,
+            load_a: 1,
+            load_b: 1,
+            load_c: 0,
+            transa: false,
+            transb: true,
+            M: 197,
+            N: 768,
+            K: 3072,
+            alpha: 1,
+            beta: 0,
+            gemm_fp: "gemm_fp32_opt"
+        }
+    }
+}

@@ -1,0 +1,108 @@
+// Copyright 2024 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+{
+    num_layers : 40,
+    mha: {
+        num_heads: 16,
+        layernorm: {
+            input_dim: {
+                batch_size: 1,
+                seq_len: 2048,
+                embeddings: 2048
+            },
+            eps: 1e-5,
+            prec: "FP8",
+            n_tiles: 33,
+            implementation: "OPT"
+        },
+        gemm: {
+            setup_ssr: 1,
+            parallelize_m: 0,
+            parallelize_k: 0,
+            m_tiles: 256,
+            n_tiles: 2,
+            k_tiles: 4,
+            load_a: 1,
+            load_b: 1,
+            load_c: 0,
+            transa: false,
+            transb: true,
+            M: 2048,
+            N: 128,
+            K: 2048,
+            alpha: 1,
+            beta: 0,
+            gemm_fp: "gemm_fp8_opt"
+        },
+        flashattention_2: {
+            L: 2048,
+            S: 2048,
+            d: 128,
+            B_r: 32,
+            B_c: 32,
+            dtype: "FP8",
+            use_mask: true,
+            baseline: false
+        },
+        'fused_concat_linear': {
+            num_inputs: 16,
+            input_shape: [16, 128],
+            output_shape: [16, 128],
+            dtype: "FP8",
+            gemm_implementation: "gemm_fp8_opt"
+        }
+    },
+    mlp: {
+        layernorm: {
+            input_dim: {
+                batch_size: 1,
+                seq_len: 2048,
+                embeddings: 2048
+            },
+            eps: 1e-5,
+            prec: "FP8",
+            n_tiles: 33,
+            implementation: "OPT"
+        },
+        'fused_linear_gelu': {
+            setup_ssr: 1,
+            parallelize_m: 0,
+            parallelize_k: 0,
+            m_tiles: 256, // number of tiles in M dimension
+            n_tiles: 2, // number of tiles in N dimension
+            k_tiles: 4, // number of tiles in K dimension
+            load_a: 1,
+            load_b: 1,
+            load_c: 1,
+            transa: false,
+            transb: true, // must be true for SIMD
+            M: 2048,
+            N: 128,
+            K: 2048,
+            alpha: 1,
+            beta: 0,
+            gemm_fp: "gemm_fp8_opt"
+        },
+        gemm: {
+            setup_ssr: 1,
+            parallelize_m: 0,
+            parallelize_k: 0,
+            m_tiles: 256,
+            n_tiles: 32,
+            k_tiles: 16,
+            load_a: 1,
+            load_b: 1,
+            load_c: 0,
+            transa: false,
+            transb: true,
+            M: 2048,
+            N: 2048,
+            K: 8192,
+            alpha: 1,
+            beta: 0,
+            gemm_fp: "gemm_fp8_opt"
+        }
+    }
+}
