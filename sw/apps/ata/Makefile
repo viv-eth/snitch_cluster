@@ -9,20 +9,20 @@ MK_DIR   := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 DATA_DIR := $(realpath $(MK_DIR)/data)
 SRC_DIR  := $(realpath $(MK_DIR)/src)
 
-LENGTH  ?= 24
 SECTION ?=
 
-APP     ?= axpy
+APP     ?= ata
 SRCS    ?= $(SRC_DIR)/main.c
 INCDIRS += $(DATA_DIR) $(SRC_DIR)
 
 DATAGEN_PY = $(DATA_DIR)/datagen.py
 DATA_H     = $(DATA_DIR)/data.h
+DATA_CFG ?= $(DATA_DIR)/params.hjson
 
-$(DATA_H): $(DATAGEN_PY)
-	$< $(LENGTH) --section="$(SECTION)" > $@
+$(DATA_H): $(DATAGEN_PY) $(DATA_CFG)
+	$< -c $(DATA_CFG) --section="$(SECTION)" $@
 
-.PHONY: clean-data clean debug
+.PHONY: clean-data clean
 
 clean-data:
 	rm -f $(DATA_H)
@@ -31,3 +31,13 @@ clean: clean-data
 
 debug_app:
 	@echo "MK_DIR: $(MK_DIR)"
+	@echo "DATA_DIR: $(DATA_DIR)"
+	@echo "SRC_DIR: $(SRC_DIR)"
+	@echo "SECTION: $(SECTION)"
+	@echo "APP: $(APP)"
+	@echo "SRCS: $(SRCS)"
+	@echo "INCDIRS: $(INCDIRS)"
+	@echo "DATAGEN_PY: $(DATAGEN_PY)"
+	@echo "DATA_H: $(DATA_H)"
+	@echo "DATA_CFG: $(DATA_CFG)"
+	@echo "$(DATAGEN_PY) -c $(DATA_CFG) --section=\"$(SECTION)\" $(DATA_H)"

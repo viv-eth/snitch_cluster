@@ -22,13 +22,30 @@ module testharness import snitch_cluster_pkg::*; (
   wide_in_resp_t wide_in_resp;
   logic [snitch_cluster_pkg::NrCores-1:0] msip;
 
-  snitch_cluster_wrapper i_snitch_cluster (
+  snitch_cluster_pkg:: sram_cfgs_t sram_cfgs;
+
+  // EMAS = 1'b0;
+  assign sram_cfgs.icache_tag.emas  = 1'b0;
+  assign sram_cfgs.icache_data.emas = 1'b0;
+  assign sram_cfgs.tcdm.emas        = 1'b0;
+  // EMAW = 2'b01;
+  assign sram_cfgs.icache_tag.emaw  = 2'b01;
+  assign sram_cfgs.icache_data.emaw = 2'b01;
+  assign sram_cfgs.tcdm.emaw        = 2'b01;
+  // EMA  = 3'b010;
+  assign sram_cfgs.icache_tag.ema   = 3'b010;
+  assign sram_cfgs.icache_data.ema  = 3'b010;
+  assign sram_cfgs.tcdm.ema         = 3'b010;
+
+  occamy_cluster_wrapper_snitch_cluster_wrapper i_snitch_cluster_netlist (
     .clk_i,
     .rst_ni,
-    .debug_req_i ('0),
+    // .debug_req_i ('0),
     .meip_i ('0),
     .mtip_i ('0),
     .msip_i (msip),
+    .sram_cfgs_i ('1),  // PL without SDF
+    // .sram_cfgs_i (sram_cfgs), // PL with SDF
     .narrow_in_req_i (narrow_in_req),
     .narrow_in_resp_o (narrow_in_resp),
     .narrow_out_req_o (narrow_out_req),

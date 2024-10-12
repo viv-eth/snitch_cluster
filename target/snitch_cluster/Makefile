@@ -251,7 +251,7 @@ ${VSIM_BUILDDIR}/compile.vsim.tcl:
 	echo 'return 0' >> $@
 
 # Build compilation script and compile all sources for Questasim simulation
-bin/snitch_cluster.vsim: ${VSIM_BUILDDIR}/compile.vsim.tcl $(VSIM_SOURCES) ${TB_SRCS} ${TB_CC_SOURCES} ${TB_ASM_SOURCES} work/lib/libfesvr.a
+bin/snitch_cluster.vsim: $(VSIM_SOURCES) ${TB_SRCS} ${TB_CC_SOURCES} ${TB_ASM_SOURCES} work/lib/libfesvr.a
 	$(call QUESTASIM,tb_bin)
 
 #######

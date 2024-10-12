@@ -12,10 +12,8 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../../../util/sim/"))
 from data_utils import format_scalar_definition, format_vector_definition, \
-                       format_vector_declaration, format_ifdef_wrapper  # noqa: E402
-
-MIN = -1000
-MAX = +1000
+                       format_vector_declaration, format_ifdef_wrapper, \
+                       generate_random_array
 
 # Aligns data to the size of a beat to avoid misaligned transfers
 BEAT_ALIGNMENT = 64
@@ -44,9 +42,9 @@ def main():
     section = args.section
 
     # Randomly generate inputs
-    a = np.random.uniform(MIN, MAX, 1)
-    x = np.random.uniform(MIN, MAX, length)
-    y = np.random.uniform(MIN, MAX, length)
+    a = generate_random_array(1)[0]
+    x = generate_random_array(length)[0]
+    y = generate_random_array(length)[0]
     z = np.zeros(length)
     g = golden_model(a, x, y)
 

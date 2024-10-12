@@ -151,8 +151,8 @@ $(VSIM_BUILDDIR):
 	mkdir -p $@
 
 define QUESTASIM
-	${VSIM} -c -do "source $<; quit" | tee $(dir $<)vsim.log
-	@! grep -P "Errors: [1-9]*," $(dir $<)vsim.log
+	${VSIM} -c -do "source work-vsim/compile.vsim.tcl; quit" | tee $(dir work-vsim/compile.vsim.tcl)vsim.log
+	@! grep -P "Errors: [1-9]*," $(dir work-vsim/compile.vsim.tcl)vsim.log
 	@mkdir -p $(dir $@)
 	@echo "#!/bin/bash" > $@
 	@echo 'binary=$$(realpath $$1)' >> $@
